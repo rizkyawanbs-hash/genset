@@ -1,0 +1,1264 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Log Operasional Genset</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+            .print-only {
+                display: block !important;
+            }
+            body {
+                background: #fff !important;
+                color: #000 !important;
+            }
+            .shadow-lg, .shadow, .shadow-md, .shadow-xl, .shadow-2xl {
+                box-shadow: none !important;
+            }
+            .border {
+                border-color: #ccc !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex flex-col">
+
+    <!-- Top Navigation Header -->
+    <header class="bg-slate-800 border-b border-slate-700 sticky top-0 z-30 no-print">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <div class="p-2.5 bg-amber-500/10 text-amber-500 rounded-xl border border-amber-500/20 shadow-inner">
+                    <i class="fa-solid fa-bolt text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold text-white tracking-wide">GensetLog<span class="text-amber-500">Pro</span></h1>
+                    <p class="text-xs text-slate-400">Sistem Monitoring Real-Time Genset 6.9 kVA (Non-HM) & 25 kVA (With HM)</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3">
+                <button onclick="openStartModal()" class="flex items-center space-x-2 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-2.5 rounded-xl transition-all shadow-lg shadow-amber-500/20 text-sm">
+                    <i class="fa-solid fa-play text-xs"></i>
+                    <span>Nyalakan Genset (ON)</span>
+                </button>
+                <button onclick="openFullManualModal()" class="flex items-center space-x-2 bg-slate-700 hover:bg-slate-600 text-slate-200 font-semibold px-3 py-2.5 rounded-xl transition-all border border-slate-600 text-sm" title="Input data historis/lengkap sekaligus">
+                    <i class="fa-solid fa-pen-to-square text-xs"></i>
+                    <span class="hidden sm:inline">Input Manual Lengkap</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-grow max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
+
+        <!-- Header Print (Only shown when printing) -->
+        <div class="hidden print-only mb-6 text-slate-900">
+            <h1 class="text-2xl font-bold">Laporan Log Operasional Genset</h1>
+            <p class="text-sm">Dicetak pada: <span id="print-timestamp"></span></p>
+            <hr class="my-2 border-slate-400">
+        </div>
+
+        <!-- Status Units Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5 no-print">
+            <!-- Unit 6.9 kVA Status Card -->
+            <div id="card-unit-69" class="bg-slate-800 rounded-2xl border border-slate-700 p-5 transition-all relative overflow-hidden flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="inline-block px-2.5 py-1 text-xs font-semibold bg-slate-700 text-slate-300 rounded-md mb-1">Unit Portabel / Tanpa HM</span>
+                            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                                Genset 6.9 kVA
+                            </h2>
+                        </div>
+                        <span id="badge-status-69" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span id="ping-69" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            <span id="text-status-69">STANDBY</span>
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-700/50 mb-3">
+                        <div>
+                            <p class="text-xs text-slate-400">HM Metering</p>
+                            <p class="text-sm font-semibold text-slate-400 italic">Non-HM</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400">Durasi Berjalan</p>
+                            <p class="text-lg font-bold text-sky-400 font-mono" id="live-timer-69">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400">Penggunaan Bln Ini</p>
+                            <p class="text-lg font-bold text-amber-400 font-mono" id="hm-month-69">0.0 <span class="text-xs text-slate-400 font-normal">Jam</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="action-area-69" class="pt-2 border-t border-slate-700/50 flex justify-between items-center">
+                    <span class="text-xs text-slate-400 truncate max-w-[200px]">Aktivitas: <span id="last-active-69" class="text-slate-300">-</span></span>
+                    <div id="btn-container-69">
+                        <button onclick="openStartModal('6.9 kVA')" class="bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-play"></i> Start Genset
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Unit 25 kVA Status Card -->
+            <div id="card-unit-25" class="bg-slate-800 rounded-2xl border border-slate-700 p-5 transition-all relative overflow-hidden flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <span class="inline-block px-2.5 py-1 text-xs font-semibold bg-slate-700 text-slate-300 rounded-md mb-1">Unit Utama / Dengan HM</span>
+                            <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                                Genset 25 kVA
+                            </h2>
+                        </div>
+                        <span id="badge-status-25" class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                            <span id="ping-25" class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                            <span id="text-status-25">STANDBY</span>
+                        </span>
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2 bg-slate-900/60 p-3 rounded-xl border border-slate-700/50 mb-3">
+                        <div>
+                            <p class="text-xs text-slate-400">HM Terakhir</p>
+                            <p class="text-lg font-bold text-amber-400 font-mono" id="hm-last-25">0.0</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400">Durasi Berjalan</p>
+                            <p class="text-lg font-bold text-sky-400 font-mono" id="live-timer-25">-</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400">Penggunaan Bln Ini</p>
+                            <p class="text-lg font-bold text-amber-400 font-mono" id="hm-month-25">0.0 <span class="text-xs text-slate-400 font-normal">Jam</span></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="action-area-25" class="pt-2 border-t border-slate-700/50 flex justify-between items-center">
+                    <span class="text-xs text-slate-400 truncate max-w-[200px]">Aktivitas: <span id="last-active-25" class="text-slate-300">-</span></span>
+                    <div id="btn-container-25">
+                        <button onclick="openStartModal('25 kVA')" class="bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-play"></i> Start Genset
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Global Summary Metrics -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 no-print">
+            <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 flex items-center space-x-3">
+                <div class="p-3 bg-blue-500/10 text-blue-400 rounded-xl border border-blue-500/20">
+                    <i class="fa-solid fa-clipboard-list text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400">Total Sesi Operasional</p>
+                    <p class="text-lg font-bold text-white" id="stat-total-logs">0</p>
+                </div>
+            </div>
+            <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 flex items-center space-x-3">
+                <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl border border-emerald-500/20">
+                    <i class="fa-solid fa-clock text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400">Total Jam Kerja (All)</p>
+                    <p class="text-lg font-bold text-white" id="stat-total-hours">0.0 Jam</p>
+                </div>
+            </div>
+            <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 flex items-center space-x-3">
+                <div class="p-3 bg-purple-500/10 text-purple-400 rounded-xl border border-purple-500/20">
+                    <i class="fa-solid fa-calendar-days text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400">Jam Kerja Bulan Ini</p>
+                    <p class="text-lg font-bold text-white" id="stat-month-hours">0.0 Jam</p>
+                </div>
+            </div>
+            <div class="bg-slate-800/80 p-4 rounded-xl border border-slate-700/80 flex items-center space-x-3">
+                <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl border border-amber-500/20">
+                    <i class="fa-solid fa-power-off text-lg"></i>
+                </div>
+                <div>
+                    <p class="text-xs text-slate-400">Genset Sedang ON</p>
+                    <p class="text-lg font-bold text-white" id="stat-active-count">0 Unit</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter & Action Controls Bar -->
+        <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 flex flex-col md:flex-row gap-3 justify-between items-stretch md:items-center no-print">
+            <div class="flex flex-col sm:flex-row gap-3 flex-grow">
+                <!-- Search -->
+                <div class="relative flex-grow sm:max-w-xs">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="filter-search" oninput="renderLogs()" placeholder="Cari keterangan..." class="w-full bg-slate-900 border border-slate-700 rounded-lg pl-9 pr-3 py-2 text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-amber-500">
+                </div>
+                <!-- Filter Unit -->
+                <select id="filter-unit" onchange="renderLogs()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                    <option value="ALL">Semua Unit Genset</option>
+                    <option value="6.9 kVA">Genset 6.9 kVA</option>
+                    <option value="25 kVA">Genset 25 kVA</option>
+                </select>
+                <!-- Filter Month -->
+                <input type="month" id="filter-month" onchange="renderLogs()" class="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+            </div>
+
+            <div class="flex gap-2">
+                <button onclick="resetFilters()" title="Reset Filter" class="p-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg transition-all">
+                    <i class="fa-solid fa-rotate-right text-xs"></i>
+                </button>
+                <button onclick="exportToCSV()" class="flex items-center space-x-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm px-3 py-2 rounded-lg transition-all border border-slate-600">
+                    <i class="fa-solid fa-file-csv text-xs text-emerald-400"></i>
+                    <span>Ekspor CSV</span>
+                </button>
+                <button onclick="printReport()" class="flex items-center space-x-1.5 bg-slate-700 hover:bg-slate-600 text-slate-200 text-sm px-3 py-2 rounded-lg transition-all border border-slate-600">
+                    <i class="fa-solid fa-print text-xs text-sky-400"></i>
+                    <span>Cetak PDF</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Log History -->
+        <div class="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden shadow-xl">
+            <div class="px-5 py-4 border-b border-slate-700 flex justify-between items-center no-print">
+                <h3 class="font-bold text-white flex items-center gap-2 text-base">
+                    <i class="fa-solid fa-list-check text-amber-500"></i>
+                    Riwayat Log Operasional Genset
+                </h3>
+                <span id="log-count-badge" class="text-xs text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-700 font-mono">0 Record</span>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm text-slate-300">
+                    <thead class="bg-slate-900/80 text-xs text-slate-400 uppercase tracking-wider border-b border-slate-700">
+                        <tr>
+                            <th class="py-3.5 px-4">Unit</th>
+                            <th class="py-3.5 px-4">Waktu Start (ON)</th>
+                            <th class="py-3.5 px-4">Waktu Stop (OFF)</th>
+                            <th class="py-3.5 px-4 text-right">HM Start</th>
+                            <th class="py-3.5 px-4 text-right">HM Stop</th>
+                            <th class="py-3.5 px-4 text-right">Selisih HM</th>
+                            <th class="py-3.5 px-4">Durasi Kerja</th>
+                            <th class="py-3.5 px-4">Keterangan</th>
+                            <th class="py-3.5 px-4 text-center no-print">Aksi / Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="log-table-body" class="divide-y divide-slate-700/60">
+                        <!-- Rows rendered dynamically -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Empty State -->
+            <div id="empty-state" class="hidden p-8 text-center text-slate-500">
+                <i class="fa-solid fa-inbox text-4xl mb-3 text-slate-600"></i>
+                <p class="text-base font-medium text-slate-400">Belum Ada Catatan Operasional</p>
+                <p class="text-xs text-slate-500 mt-1">Klik tombol "Nyalakan Genset (ON)" untuk mulai mencatat sesi baru.</p>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Modal 1: Nyalakan Genset (ON) -->
+    <div id="start-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-md overflow-hidden shadow-2xl transition-all">
+            <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-play text-amber-500"></i>
+                    Mulai Operasi Genset (ON)
+                </h3>
+                <button onclick="closeStartModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="start-form" onsubmit="handleStartSubmit(event)" class="p-6 space-y-4">
+                <!-- Choice Unit -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Pilih Unit Genset *</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="start_unit" value="6.9 kVA" class="peer hidden" required onchange="toggleStartHMInput()">
+                            <div class="p-3 text-center rounded-xl border border-slate-700 bg-slate-900 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-400 font-semibold transition-all text-sm">
+                                Genset 6.9 kVA
+                                <span class="block text-[10px] font-normal text-slate-400 mt-0.5">Non-HM</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="start_unit" value="25 kVA" class="peer hidden" required onchange="toggleStartHMInput()">
+                            <div class="p-3 text-center rounded-lg border border-slate-700 bg-slate-900 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-400 font-semibold transition-all text-sm">
+                                Genset 25 kVA
+                                <span class="block text-[10px] font-normal text-amber-400/80 mt-0.5">Dengan HM</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Time Start -->
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Tanggal & Waktu Nyala (Start) *</label>
+                    <input type="datetime-local" id="start-time-input" required class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                </div>
+
+                <!-- HM Start (Special for 25 kVA) -->
+                <div id="start-hm-wrapper">
+                    <label class="block text-xs text-slate-400 mb-1">Hour Meter (HM) Awal *</label>
+                    <input type="number" step="0.1" min="0" id="start-hm-input" placeholder="Contoh: 1250.5" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                </div>
+
+                <!-- Operational Notes -->
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Keterangan / Alasan Dinyalakan *</label>
+                    <textarea id="start-notes-input" rows="2" required placeholder="Contoh: Mati lampu PLN, Uji pemanasan rutin..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"></textarea>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="flex justify-end space-x-3 pt-3 border-t border-slate-700">
+                    <button type="button" onclick="closeStartModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-sm font-bold transition-all shadow-lg shadow-amber-500/10 flex items-center gap-2">
+                        <i class="fa-solid fa-play text-xs"></i>
+                        <span>Simpan & Nyalakan</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 2: Matikan Genset (OFF) -->
+    <div id="stop-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-md overflow-hidden shadow-2xl transition-all">
+            <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-stop text-rose-500"></i>
+                    Matikan Operasi Genset (OFF)
+                </h3>
+                <button onclick="closeStopModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="stop-form" onsubmit="handleStopSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="stop-log-id">
+
+                <!-- Info Header Session -->
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700/80 text-xs space-y-1">
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Unit Genset:</span>
+                        <span id="stop-unit-text" class="font-bold text-amber-400">25 kVA</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-slate-400">Jam Nyala (Start):</span>
+                        <span id="stop-start-time-text" class="text-slate-200">-</span>
+                    </div>
+                    <div id="stop-start-hm-row" class="flex justify-between">
+                        <span class="text-slate-400">HM Awal:</span>
+                        <span id="stop-start-hm-text" class="font-mono text-slate-200">0.0</span>
+                    </div>
+                </div>
+
+                <!-- Time Stop -->
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Tanggal & Waktu Mati (Stop) *</label>
+                    <input type="datetime-local" id="stop-time-input" required onchange="calculateStopMetrics()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                </div>
+
+                <!-- HM Stop (Special for 25 kVA) -->
+                <div id="stop-hm-wrapper">
+                    <label class="block text-xs text-slate-400 mb-1">Hour Meter (HM) Akhir *</label>
+                    <input type="number" step="0.1" min="0" id="stop-hm-input" placeholder="Contoh: 1255.0" oninput="calculateStopMetrics()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                </div>
+
+                <!-- Calculated Output Box -->
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700/80 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                        <span class="text-slate-400">Total Durasi Kerja:</span>
+                        <p id="stop-calc-duration" class="font-bold text-sky-400 text-sm font-mono">0j 0m</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-400">Selisih HM:</span>
+                        <p id="stop-calc-hm-diff" class="font-bold text-amber-400 text-sm font-mono">0.0 Jam</p>
+                    </div>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="flex justify-end space-x-3 pt-3 border-t border-slate-700">
+                    <button type="button" onclick="closeStopModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-lg text-sm font-bold transition-all shadow-lg shadow-rose-500/10 flex items-center gap-2">
+                        <i class="fa-solid fa-stop text-xs"></i>
+                        <span>Simpan & Matikan</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal 3: Input Manual Lengkap (Edit / Retroaktif) -->
+    <div id="full-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4 overflow-y-auto">
+        <div class="bg-slate-800 rounded-2xl border border-slate-700 w-full max-w-lg overflow-hidden shadow-2xl transition-all">
+            <div class="px-6 py-4 border-b border-slate-700 flex justify-between items-center bg-slate-900/50">
+                <h3 id="full-modal-title" class="text-lg font-bold text-white flex items-center gap-2">
+                    <i class="fa-solid fa-pen-to-square text-amber-500"></i>
+                    Input Manual Lengkap
+                </h3>
+                <button onclick="closeFullModal()" class="text-slate-400 hover:text-white transition-colors">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <form id="full-form" onsubmit="handleFullSubmit(event)" class="p-6 space-y-4">
+                <input type="hidden" id="full-entry-id">
+
+                <!-- Choice Unit -->
+                <div>
+                    <label class="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">Pilih Unit Genset *</label>
+                    <div class="grid grid-cols-2 gap-3">
+                        <label class="cursor-pointer">
+                            <input type="radio" name="full_unit" value="6.9 kVA" class="peer hidden" required onchange="toggleFullHMInput()">
+                            <div class="p-3 text-center rounded-xl border border-slate-700 bg-slate-900 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-400 font-semibold transition-all text-sm">
+                                Genset 6.9 kVA
+                                <span class="block text-[10px] font-normal text-slate-400 mt-0.5">Non-HM</span>
+                            </div>
+                        </label>
+                        <label class="cursor-pointer">
+                            <input type="radio" name="full_unit" value="25 kVA" class="peer hidden" required onchange="toggleFullHMInput()">
+                            <div class="p-3 text-center rounded-xl border border-slate-700 bg-slate-900 peer-checked:border-amber-500 peer-checked:bg-amber-500/10 peer-checked:text-amber-400 font-semibold transition-all text-sm">
+                                Genset 25 kVA
+                                <span class="block text-[10px] font-normal text-amber-400/80 mt-0.5">Dengan HM</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Time Start & Stop -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Tanggal & Waktu Start *</label>
+                        <input type="datetime-local" id="full-start-time" required onchange="calculateFullMetrics()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">Tanggal & Waktu Stop</label>
+                        <input type="datetime-local" id="full-stop-time" onchange="calculateFullMetrics()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+
+                <!-- HM Start & Stop (Special 25 kVA) -->
+                <div id="full-hm-container" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">HM Start *</label>
+                        <input type="number" step="0.1" min="0" id="full-hm-start" placeholder="Contoh: 1250.0" oninput="calculateFullMetrics()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-slate-400 mb-1">HM Stop</label>
+                        <input type="number" step="0.1" min="0" id="full-hm-stop" placeholder="Contoh: 1254.5" oninput="calculateFullMetrics()" class="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-200 focus:outline-none focus:border-amber-500">
+                    </div>
+                </div>
+
+                <!-- Auto Calculated Output Box -->
+                <div class="bg-slate-900/80 p-3 rounded-xl border border-slate-700/80 grid grid-cols-2 gap-2 text-xs">
+                    <div>
+                        <span class="text-slate-400">Durasi Kerja:</span>
+                        <p id="full-calc-duration" class="font-bold text-sky-400 text-sm font-mono">0j 0m</p>
+                    </div>
+                    <div>
+                        <span class="text-slate-400">Selisih HM:</span>
+                        <p id="full-calc-hm-diff" class="font-bold text-amber-400 text-sm font-mono">0.0 Jam</p>
+                    </div>
+                </div>
+
+                <!-- Operational Notes -->
+                <div>
+                    <label class="block text-xs text-slate-400 mb-1">Keterangan / Catatan Operasional *</label>
+                    <textarea id="full-notes" rows="2" required placeholder="Contoh: Mati lampu PLN, Perawatan rutin..." class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm text-slate-200 focus:outline-none focus:border-amber-500"></textarea>
+                </div>
+
+                <!-- Submit Buttons -->
+                <div class="flex justify-end space-x-3 pt-3 border-t border-slate-700">
+                    <button type="button" onclick="closeFullModal()" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded-lg text-sm font-medium transition-colors">
+                        Batal
+                    </button>
+                    <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-slate-950 rounded-lg text-sm font-bold transition-all shadow-lg shadow-amber-500/10">
+                        Simpan Data
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 hidden transform transition-all duration-300 translate-y-10 opacity-0">
+        <div id="toast-content" class="bg-slate-800 border border-slate-700 text-slate-100 px-4 py-3 rounded-xl shadow-2xl flex items-center space-x-3">
+            <i id="toast-icon" class="fa-solid fa-circle-check text-emerald-400 text-lg"></i>
+            <span id="toast-message" class="text-sm font-medium">Pesan notifikasi</span>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-auto py-4 bg-slate-950 border-t border-slate-800 text-center text-xs text-slate-500 no-print">
+        <p>&copy; 2026 Genset Operational Monitoring System — Dual Phase Real-Time Log</p>
+    </footer>
+
+    <!-- Application Script Logic -->
+    <script>
+        // Data Store
+        const BASELINE_HM_25KVA = 1060.0;
+        let logs = JSON.parse(localStorage.getItem('genset_logs_db_v2')) || [];
+        let timerInterval = null;
+
+        // Initial Data Sample if empty
+        if (logs.length === 0) {
+            logs = [
+                {
+                    id: 'log-101',
+                    unit: '25 kVA',
+                    startTime: '2026-10-17T08:00',
+                    stopTime: '2026-10-17T12:30',
+                    hmStart: 1060.0,
+                    hmStop: 1064.5,
+                    notes: 'Pemadaman terencana PLN (Maintenance Grid)'
+                },
+                {
+                    id: 'log-102',
+                    unit: '6.9 kVA',
+                    startTime: '2026-10-18T07:00',
+                    stopTime: null, // Currently RUNNING
+                    hmStart: null,
+                    hmStop: null,
+                    notes: 'Pengujian awal mesin dan pemicu cadangan'
+                }
+            ];
+            saveLogsToStorage();
+        }
+
+        // Initialize App
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDashboard();
+            startLiveTimerLoop();
+        });
+
+        function saveLogsToStorage() {
+            localStorage.setItem('genset_logs_db_v2', JSON.stringify(logs));
+        }
+
+        // Live Timer Loop for Active Running Gensets
+        function startLiveTimerLoop() {
+            if (timerInterval) clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                updateLiveTimers();
+            }, 1000);
+        }
+
+        function updateLiveTimers() {
+            const units = ['6.9 kVA', '25 kVA'];
+            units.forEach(unit => {
+                const is69 = unit === '6.9 kVA';
+                const key = is69 ? '69' : '25';
+                const runningLog = logs.find(l => l.unit === unit && !l.stopTime);
+
+                const timerElem = document.getElementById(`live-timer-${key}`);
+                if (runningLog) {
+                    const start = new Date(runningLog.startTime);
+                    const now = new Date();
+                    const diffMs = Math.max(0, now - start);
+                    
+                    const totalSecs = Math.floor(diffMs / 1000);
+                    const hrs = Math.floor(totalSecs / 3600);
+                    const mins = Math.floor((totalSecs % 3600) / 60);
+                    const secs = totalSecs % 60;
+
+                    const formatted = `${String(hrs).padStart(2, '0')}:${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+                    if (timerElem) timerElem.innerText = formatted;
+                } else {
+                    if (timerElem) timerElem.innerText = '-';
+                }
+            });
+        }
+
+        // --- MODAL 1: START (ON) ---
+        function openStartModal(preselectedUnit = null) {
+            const form = document.getElementById('start-form');
+            form.reset();
+
+            const now = new Date();
+            const nowIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            document.getElementById('start-time-input').value = nowIso;
+
+            if (preselectedUnit) {
+                const radio = form.querySelector(`input[name="start_unit"][value="${preselectedUnit}"]`);
+                if (radio) {
+                    radio.checked = true;
+                    toggleStartHMInput();
+                }
+            } else {
+                toggleStartHMInput();
+            }
+
+            document.getElementById('start-modal').classList.remove('hidden');
+        }
+
+        function closeStartModal() {
+            document.getElementById('start-modal').classList.add('hidden');
+        }
+
+        function toggleStartHMInput() {
+            const unit = document.querySelector('input[name="start_unit"]:checked')?.value;
+            const hmWrapper = document.getElementById('start-hm-wrapper');
+            const hmInput = document.getElementById('start-hm-input');
+
+            if (unit === '25 kVA') {
+                hmWrapper.classList.remove('hidden');
+                hmInput.required = true;
+                
+                // Auto fill last HM Stop or Baseline (1060)
+                const last25Log = logs
+                    .filter(l => l.unit === '25 kVA' && l.hmStop !== null)
+                    .sort((a, b) => new Date(b.stopTime || b.startTime) - new Date(a.stopTime || a.startTime))[0];
+                
+                if (last25Log && last25Log.hmStop !== null) {
+                    hmInput.value = last25Log.hmStop;
+                } else {
+                    hmInput.value = BASELINE_HM_25KVA;
+                }
+            } else {
+                hmWrapper.classList.add('hidden');
+                hmInput.required = false;
+                hmInput.value = '';
+            }
+        }
+
+        function handleStartSubmit(e) {
+            e.preventDefault();
+            const unit = document.querySelector('input[name="start_unit"]:checked')?.value;
+            const startTime = document.getElementById('start-time-input').value;
+            const notes = document.getElementById('start-notes-input').value.trim();
+
+            // Check if already running
+            const existingRunning = logs.find(l => l.unit === unit && !l.stopTime);
+            if (existingRunning) {
+                showToast(`Genset ${unit} saat ini sudah berstatus RUNNING! Matikan terlebih dahulu.`, 'error');
+                return;
+            }
+
+            let hmStart = null;
+            if (unit === '25 kVA') {
+                hmStart = parseFloat(document.getElementById('start-hm-input').value);
+                if (isNaN(hmStart)) {
+                    showToast('HM Start wajib diisi untuk Genset 25 kVA!', 'error');
+                    return;
+                }
+            }
+
+            const newLog = {
+                id: 'log-' + Date.now(),
+                unit,
+                startTime,
+                stopTime: null,
+                hmStart,
+                hmStop: null,
+                notes
+            };
+
+            logs.unshift(newLog);
+            saveLogsToStorage();
+            closeStartModal();
+            renderDashboard();
+            showToast(`Genset ${unit} berhasil dinyalakan (ON)!`);
+        }
+
+        // --- MODAL 2: STOP (OFF) ---
+        function openStopModal(logId) {
+            const log = logs.find(l => l.id === logId);
+            if (!log) return;
+
+            document.getElementById('stop-log-id').value = log.id;
+            document.getElementById('stop-unit-text').innerText = log.unit;
+            document.getElementById('stop-start-time-text').innerText = formatDateTime(log.startTime);
+
+            const is25 = log.unit === '25 kVA';
+            const hmRow = document.getElementById('stop-start-hm-row');
+            const hmWrapper = document.getElementById('stop-hm-wrapper');
+            const hmInput = document.getElementById('stop-hm-input');
+
+            if (is25) {
+                hmRow.classList.remove('hidden');
+                document.getElementById('stop-start-hm-text').innerText = log.hmStart !== null ? log.hmStart.toFixed(1) : '-';
+                hmWrapper.classList.remove('hidden');
+                hmInput.required = true;
+                hmInput.value = log.hmStart !== null ? log.hmStart : '';
+            } else {
+                hmRow.classList.add('hidden');
+                hmWrapper.classList.add('hidden');
+                hmInput.required = false;
+                hmInput.value = '';
+            }
+
+            const now = new Date();
+            const nowIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+            document.getElementById('stop-time-input').value = nowIso;
+
+            calculateStopMetrics();
+            document.getElementById('stop-modal').classList.remove('hidden');
+        }
+
+        function closeStopModal() {
+            document.getElementById('stop-modal').classList.add('hidden');
+        }
+
+        function calculateStopMetrics() {
+            const logId = document.getElementById('stop-log-id').value;
+            const log = logs.find(l => l.id === logId);
+            if (!log) return;
+
+            const stopTimeVal = document.getElementById('stop-time-input').value;
+            const stopHmVal = parseFloat(document.getElementById('stop-hm-input').value);
+
+            // Duration Calc
+            if (stopTimeVal && log.startTime) {
+                const s = new Date(log.startTime);
+                const e = new Date(stopTimeVal);
+                if (e >= s) {
+                    const mins = Math.floor((e - s) / (1000 * 60));
+                    const hrs = Math.floor(mins / 60);
+                    const rMins = mins % 60;
+                    document.getElementById('stop-calc-duration').innerText = `${hrs}j ${rMins}m`;
+                } else {
+                    document.getElementById('stop-calc-duration').innerText = 'Waktu Salah';
+                }
+            }
+
+            // HM Diff Calc
+            if (log.unit === '25 kVA' && log.hmStart !== null && !isNaN(stopHmVal)) {
+                if (stopHmVal >= log.hmStart) {
+                    const diff = (stopHmVal - log.hmStart).toFixed(1);
+                    document.getElementById('stop-calc-hm-diff').innerText = `${diff} Jam`;
+                } else {
+                    document.getElementById('stop-calc-hm-diff').innerText = '< HM Start';
+                }
+            } else {
+                document.getElementById('stop-calc-hm-diff').innerText = 'Non-HM';
+            }
+        }
+
+        function handleStopSubmit(e) {
+            e.preventDefault();
+            const logId = document.getElementById('stop-log-id').value;
+            const logIndex = logs.findIndex(l => l.id === logId);
+            if (logIndex === -1) return;
+
+            const log = logs[logIndex];
+            const stopTime = document.getElementById('stop-time-input').value;
+            
+            if (new Date(stopTime) < new Date(log.startTime)) {
+                showToast('Waktu Stop tidak boleh sebelum Waktu Start!', 'error');
+                return;
+            }
+
+            let hmStop = null;
+            if (log.unit === '25 kVA') {
+                hmStop = parseFloat(document.getElementById('stop-hm-input').value);
+                if (isNaN(hmStop) || hmStop < log.hmStart) {
+                    showToast('HM Stop harus angka dan lebih besar/sama dengan HM Start!', 'error');
+                    return;
+                }
+            }
+
+            logs[logIndex].stopTime = stopTime;
+            logs[logIndex].hmStop = hmStop;
+
+            saveLogsToStorage();
+            closeStopModal();
+            renderDashboard();
+            showToast(`Genset ${log.unit} berhasil dimatikan (OFF).`);
+        }
+
+        // --- MODAL 3: FULL MANUAL / EDIT ---
+        function openFullManualModal(editId = null) {
+            const form = document.getElementById('full-form');
+            form.reset();
+            document.getElementById('full-entry-id').value = '';
+
+            if (editId) {
+                const log = logs.find(l => l.id === editId);
+                if (log) {
+                    document.getElementById('full-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-500"></i> Edit Log Operasional`;
+                    document.getElementById('full-entry-id').value = log.id;
+
+                    const radio = form.querySelector(`input[name="full_unit"][value="${log.unit}"]`);
+                    if (radio) radio.checked = true;
+
+                    document.getElementById('full-start-time').value = log.startTime;
+                    document.getElementById('full-stop-time').value = log.stopTime || '';
+                    document.getElementById('full-hm-start').value = log.hmStart !== null ? log.hmStart : '';
+                    document.getElementById('full-hm-stop').value = log.hmStop !== null ? log.hmStop : '';
+                    document.getElementById('full-notes').value = log.notes;
+
+                    toggleFullHMInput();
+                    calculateFullMetrics();
+                }
+            } else {
+                document.getElementById('full-modal-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-500"></i> Input Manual Lengkap`;
+                const now = new Date();
+                const nowIso = new Date(now.getTime() - (now.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
+                document.getElementById('full-start-time').value = nowIso;
+                toggleFullHMInput();
+            }
+
+            document.getElementById('full-modal').classList.remove('hidden');
+        }
+
+        function closeFullModal() {
+            document.getElementById('full-modal').classList.add('hidden');
+        }
+
+        function toggleFullHMInput() {
+            const unit = document.querySelector('input[name="full_unit"]:checked')?.value;
+            const container = document.getElementById('full-hm-container');
+            const hmAwal = document.getElementById('full-hm-start');
+
+            if (unit === '25 kVA') {
+                container.classList.remove('hidden');
+                hmAwal.required = true;
+            } else {
+                container.classList.add('hidden');
+                hmAwal.required = false;
+                hmAwal.value = '';
+                document.getElementById('full-hm-stop').value = '';
+            }
+        }
+
+        function calculateFullMetrics() {
+            const startTime = document.getElementById('full-start-time').value;
+            const stopTime = document.getElementById('full-stop-time').value;
+            const hmStart = parseFloat(document.getElementById('full-hm-start').value);
+            const hmStop = parseFloat(document.getElementById('full-hm-stop').value);
+            const unit = document.querySelector('input[name="full_unit"]:checked')?.value;
+
+            // Duration
+            if (startTime && stopTime) {
+                const s = new Date(startTime);
+                const e = new Date(stopTime);
+                if (e >= s) {
+                    const mins = Math.floor((e - s) / (1000 * 60));
+                    const hrs = Math.floor(mins / 60);
+                    const rMins = mins % 60;
+                    document.getElementById('full-calc-duration').innerText = `${hrs}j ${rMins}m`;
+                } else {
+                    document.getElementById('full-calc-duration').innerText = 'Waktu Tidak Valid';
+                }
+            } else {
+                document.getElementById('full-calc-duration').innerText = 'Sedang Running...';
+            }
+
+            // HM
+            if (unit === '25 kVA' && !isNaN(hmStart) && !isNaN(hmStop)) {
+                if (hmStop >= hmStart) {
+                    document.getElementById('full-calc-hm-diff').innerText = `${(hmStop - hmStart).toFixed(1)} Jam`;
+                } else {
+                    document.getElementById('full-calc-hm-diff').innerText = '< HM Start';
+                }
+            } else {
+                document.getElementById('full-calc-hm-diff').innerText = 'Non-HM / -';
+            }
+        }
+
+        function handleFullSubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('full-entry-id').value;
+            const unit = document.querySelector('input[name="full_unit"]:checked')?.value;
+            const startTime = document.getElementById('full-start-time').value;
+            const stopTime = document.getElementById('full-stop-time').value || null;
+            const notes = document.getElementById('full-notes').value.trim();
+
+            let hmStart = null;
+            let hmStop = null;
+
+            if (unit === '25 kVA') {
+                hmStart = parseFloat(document.getElementById('full-hm-start').value);
+                const hmStopRaw = document.getElementById('full-hm-stop').value;
+                hmStop = hmStopRaw !== '' ? parseFloat(hmStopRaw) : null;
+
+                if (isNaN(hmStart)) {
+                    showToast('HM Start harus diisi untuk Genset 25 kVA!', 'error');
+                    return;
+                }
+                if (hmStop !== null && hmStop < hmStart) {
+                    showToast('HM Stop tidak boleh lebih kecil dari HM Start!', 'error');
+                    return;
+                }
+            }
+
+            if (stopTime && new Date(stopTime) < new Date(startTime)) {
+                showToast('Waktu Stop tidak boleh sebelum Waktu Start!', 'error');
+                return;
+            }
+
+            if (editId) {
+                const idx = logs.findIndex(l => l.id === editId);
+                if (idx !== -1) {
+                    logs[idx] = { id: editId, unit, startTime, stopTime, hmStart, hmStop, notes };
+                    showToast('Data log berhasil diperbarui.');
+                }
+            } else {
+                const newLog = {
+                    id: 'log-' + Date.now(),
+                    unit,
+                    startTime,
+                    stopTime,
+                    hmStart,
+                    hmStop,
+                    notes
+                };
+                logs.unshift(newLog);
+                showToast('Data log manual berhasil ditambahkan.');
+            }
+
+            saveLogsToStorage();
+            closeFullModal();
+            renderDashboard();
+        }
+
+        function deleteLog(id) {
+            if (confirm('Apakah Anda yakin ingin menghapus catatan log ini?')) {
+                logs = logs.filter(l => l.id !== id);
+                saveLogsToStorage();
+                renderDashboard();
+                showToast('Catatan log dihapus.');
+            }
+        }
+
+        // --- DASHBOARD RENDERERS ---
+        function renderDashboard() {
+            renderUnitCards();
+            renderGlobalStats();
+            renderLogs();
+            updateLiveTimers();
+        }
+
+        function renderUnitCards() {
+            const units = ['6.9 kVA', '25 kVA'];
+
+            units.forEach(unit => {
+                const is69 = unit === '6.9 kVA';
+                const key = is69 ? '69' : '25';
+                const unitLogs = logs.filter(l => l.unit === unit);
+
+                const runningLog = unitLogs.find(l => !l.stopTime);
+                const isRunning = !!runningLog;
+
+                // Elements
+                const badge = document.getElementById(`badge-status-${key}`);
+                const textStatus = document.getElementById(`text-status-${key}`);
+                const ping = document.getElementById(`ping-${key}`);
+                const card = document.getElementById(`card-unit-${key}`);
+                const btnContainer = document.getElementById(`btn-container-${key}`);
+
+                if (isRunning) {
+                    badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/20 text-amber-400 border border-amber-500/40";
+                    ping.className = "w-2 h-2 rounded-full bg-amber-400 animate-ping";
+                    textStatus.innerText = "RUNNING";
+                    card.className = "bg-slate-800 rounded-2xl border-2 border-amber-500/60 p-5 transition-all relative overflow-hidden flex flex-col justify-between shadow-xl shadow-amber-500/5";
+
+                    btnContainer.innerHTML = `
+                        <button onclick="openStopModal('${runningLog.id}')" class="bg-rose-500 hover:bg-rose-600 text-white text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5 shadow-md shadow-rose-500/20">
+                            <i class="fa-solid fa-power-off"></i> Matikan (OFF)
+                        </button>
+                    `;
+                } else {
+                    badge.className = "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20";
+                    ping.className = "w-2 h-2 rounded-full bg-emerald-400";
+                    textStatus.innerText = "STANDBY";
+                    card.className = "bg-slate-800 rounded-2xl border border-slate-700 p-5 transition-all relative overflow-hidden flex flex-col justify-between";
+
+                    btnContainer.innerHTML = `
+                        <button onclick="openStartModal('${unit}')" class="bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold px-3 py-1.5 rounded-lg transition-all flex items-center gap-1.5">
+                            <i class="fa-solid fa-play"></i> Start Genset
+                        </button>
+                    `;
+                }
+
+                // HM Last & Month
+                const now = new Date();
+                const curM = now.getMonth();
+                const curY = now.getFullYear();
+
+                let monthHours = 0;
+                let maxHM = BASELINE_HM_25KVA;
+
+                unitLogs.forEach(l => {
+                    let durationHours = 0;
+                    if (unit === '25 kVA' && l.hmStop !== null && l.hmStart !== null) {
+                        durationHours = l.hmStop - l.hmStart;
+                        if (l.hmStop > maxHM) maxHM = l.hmStop;
+                    } else if (l.startTime && l.stopTime) {
+                        durationHours = (new Date(l.stopTime) - new Date(l.startTime)) / (1000 * 60 * 60);
+                    }
+
+                    const d = new Date(l.startTime);
+                    if (d.getMonth() === curM && d.getFullYear() === curY) {
+                        monthHours += Math.max(0, durationHours);
+                    }
+                });
+
+                if (!is69) {
+                    document.getElementById(`hm-last-${key}`).innerText = maxHM.toFixed(1);
+                }
+                document.getElementById(`hm-month-${key}`).innerHTML = `${monthHours.toFixed(1)} <span class="text-xs text-slate-400 font-normal">Jam</span>`;
+
+                // Last active text
+                const sorted = [...unitLogs].sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+                const lastLog = sorted[0];
+                document.getElementById(`last-active-${key}`).innerText = lastLog
+                    ? `${formatDateShort(lastLog.startTime)} (${lastLog.notes.substring(0, 18)}${lastLog.notes.length > 18 ? '...' : ''})`
+                    : 'Belum ada data';
+            });
+        }
+
+        function renderGlobalStats() {
+            document.getElementById('stat-total-logs').innerText = logs.length;
+
+            let totalHours = 0;
+            let monthHours = 0;
+            const activeUnits = new Set();
+
+            const now = new Date();
+            const curM = now.getMonth();
+            const curY = now.getFullYear();
+
+            logs.forEach(l => {
+                let diffHours = 0;
+                if (l.unit === '25 kVA' && l.hmStop !== null && l.hmStart !== null) {
+                    diffHours = l.hmStop - l.hmStart;
+                } else if (l.startTime && l.stopTime) {
+                    diffHours = (new Date(l.stopTime) - new Date(l.startTime)) / (1000 * 60 * 60);
+                }
+
+                if (diffHours > 0) {
+                    totalHours += diffHours;
+                    const d = new Date(l.startTime);
+                    if (d.getMonth() === curM && d.getFullYear() === curY) {
+                        monthHours += diffHours;
+                    }
+                }
+
+                if (!l.stopTime) {
+                    activeUnits.add(l.unit);
+                }
+            });
+
+            document.getElementById('stat-total-hours').innerText = `${totalHours.toFixed(1)} Jam`;
+            document.getElementById('stat-month-hours').innerText = `${monthHours.toFixed(1)} Jam`;
+            document.getElementById('stat-active-count').innerText = `${activeUnits.size} Unit`;
+        }
+
+        function renderLogs() {
+            const search = document.getElementById('filter-search').value.toLowerCase();
+            const selectedUnit = document.getElementById('filter-unit').value;
+            const selectedMonth = document.getElementById('filter-month').value;
+
+            const filtered = logs.filter(log => {
+                if (selectedUnit !== 'ALL' && log.unit !== selectedUnit) return false;
+                if (search && !log.notes.toLowerCase().includes(search) && !log.unit.toLowerCase().includes(search)) return false;
+                if (selectedMonth && log.startTime.slice(0, 7) !== selectedMonth) return false;
+                return true;
+            });
+
+            filtered.sort((a, b) => new Date(b.startTime) - new Date(a.startTime));
+
+            const tbody = document.getElementById('log-table-body');
+            const emptyState = document.getElementById('empty-state');
+            document.getElementById('log-count-badge').innerText = `${filtered.length} Record`;
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            tbody.innerHTML = filtered.map(log => {
+                const is25 = log.unit === '25 kVA';
+                const isRunning = !log.stopTime;
+
+                let hmStartTxt = is25 && log.hmStart !== null ? log.hmStart.toFixed(1) : '-';
+                let hmStopTxt = is25 && log.hmStop !== null ? log.hmStop.toFixed(1) : '-';
+                let hmDiffTxt = is25 && log.hmStop !== null && log.hmStart !== null ? `+${(log.hmStop - log.hmStart).toFixed(1)}` : '-';
+
+                let durationTxt = '-';
+                if (isRunning) {
+                    durationTxt = '<span class="text-amber-400 font-semibold italic">Berjalan...</span>';
+                } else {
+                    durationTxt = calculateDurationText(log.startTime, log.stopTime);
+                }
+
+                return `
+                    <tr class="hover:bg-slate-700/40 transition-colors">
+                        <td class="py-3.5 px-4 font-semibold whitespace-nowrap">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-semibold ${is25 ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-blue-500/10 text-blue-400 border border-blue-500/20'}">
+                                ${log.unit}
+                            </span>
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap text-xs text-slate-300">
+                            ${formatDateTime(log.startTime)}
+                        </td>
+                        <td class="py-3.5 px-4 whitespace-nowrap text-xs text-slate-300">
+                            ${isRunning ? '<span class="inline-flex items-center text-amber-400 font-bold gap-1.5"><span class="w-2 h-2 rounded-full bg-amber-400 animate-ping"></span>RUNNING</span>' : formatDateTime(log.stopTime)}
+                        </td>
+                        <td class="py-3.5 px-4 text-right font-mono text-xs ${is25 ? 'text-slate-200' : 'text-slate-500'}">${hmStartTxt}</td>
+                        <td class="py-3.5 px-4 text-right font-mono text-xs ${is25 ? 'text-slate-200' : 'text-slate-500'}">${hmStopTxt}</td>
+                        <td class="py-3.5 px-4 text-right font-mono text-xs font-bold ${hmDiffTxt !== '-' ? 'text-amber-400' : 'text-slate-500'}">${hmDiffTxt}</td>
+                        <td class="py-3.5 px-4 text-xs text-slate-300 font-mono">${durationTxt}</td>
+                        <td class="py-3.5 px-4 max-w-xs truncate text-xs text-slate-300" title="${escapeHtml(log.notes)}">
+                            ${escapeHtml(log.notes)}
+                        </td>
+                        <td class="py-3.5 px-4 text-center whitespace-nowrap no-print">
+                            <div class="flex items-center justify-center space-x-2">
+                                ${isRunning ? `
+                                    <button onclick="openStopModal('${log.id}')" class="px-2.5 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded text-xs font-bold transition-all shadow" title="Matikan Sekarang">
+                                        OFF
+                                    </button>
+                                ` : `
+                                    <button onclick="openFullManualModal('${log.id}')" class="p-1.5 bg-slate-700 hover:bg-amber-500 hover:text-slate-950 text-slate-300 rounded transition-all" title="Edit">
+                                        <i class="fa-solid fa-pen-to-square text-xs"></i>
+                                    </button>
+                                `}
+                                <button onclick="deleteLog('${log.id}')" class="p-1.5 bg-slate-700 hover:bg-rose-500 hover:text-white text-slate-300 rounded transition-all" title="Hapus">
+                                    <i class="fa-solid fa-trash text-xs"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        // Helpers
+        function calculateDurationText(start, stop) {
+            if (!stop) return '-';
+            const s = new Date(start);
+            const e = new Date(stop);
+            const diffMs = e - s;
+            if (diffMs < 0) return '-';
+            const mins = Math.floor(diffMs / (1000 * 60));
+            const hrs = Math.floor(mins / 60);
+            const rMins = mins % 60;
+            return `${hrs}j ${rMins}m`;
+        }
+
+        function formatDateTime(dtStr) {
+            if (!dtStr) return '-';
+            const d = new Date(dtStr);
+            return d.toLocaleString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            }).replace('.', ':');
+        }
+
+        function formatDateShort(dtStr) {
+            if (!dtStr) return '-';
+            const d = new Date(dtStr);
+            return d.toLocaleDateString('id-ID', {
+                day: '2-digit',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, m => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+            }[m]));
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-search').value = '';
+            document.getElementById('filter-unit').value = 'ALL';
+            document.getElementById('filter-month').value = '';
+            renderLogs();
+        }
+
+        function exportToCSV() {
+            if (logs.length === 0) {
+                showToast('Tidak ada data log untuk diekspor!', 'error');
+                return;
+            }
+
+            let csvContent = "data:text/csv;charset=utf-8,";
+            csvContent += "ID,Unit,Waktu Start,Waktu Stop,HM Start,HM Stop,Selisih HM,Keterangan\n";
+
+            logs.forEach(l => {
+                const diff = l.unit === '25 kVA' && l.hmStop !== null && l.hmStart !== null ? (l.hmStop - l.hmStart).toFixed(1) : '-';
+                const row = [
+                    l.id,
+                    `"${l.unit}"`,
+                    `"${l.startTime}"`,
+                    `"${l.stopTime || 'RUNNING'}"`,
+                    l.hmStart !== null ? l.hmStart : '-',
+                    l.hmStop !== null ? l.hmStop : '-',
+                    diff,
+                    `"${l.notes.replace(/"/g, '""')}"`
+                ].join(",");
+                csvContent += row + "\n";
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `log_genset_${new Date().toISOString().slice(0,10)}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            showToast('File CSV berhasil diunduh!');
+        }
+
+        function printReport() {
+            document.getElementById('print-timestamp').innerText = new Date().toLocaleString('id-ID');
+            window.print();
+        }
+
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMessage = document.getElementById('toast-message');
+            const toastIcon = document.getElementById('toast-icon');
+
+            toastMessage.innerText = message;
+
+            if (type === 'error') {
+                toastIcon.className = "fa-solid fa-circle-exclamation text-rose-400 text-lg";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-lg";
+            }
+
+            toast.classList.remove('hidden', 'translate-y-10', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-10', 'opacity-0');
+                setTimeout(() => toast.classList.add('hidden'), 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
